@@ -107,7 +107,7 @@ pi -e ./extensions/piagent-private-ai.ts
 As a pi package (GitHub or npm):
 
 ```bash
-pi install git:git@github.com:FloezWerk/piagent-private-ai.git
+pi install git:https://github.com/FloezWerk/piagent-private-ai.git
 # or
 pi install npm:@floez-werk/piagent-private-ai
 ```

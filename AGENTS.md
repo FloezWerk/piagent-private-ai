@@ -66,7 +66,7 @@ string, keep it English. CI fails on umlauts anywhere in the repo.
   Public GitHub URL: `git@github.com:FloezWerk/piagent-private-ai.git`.
 - Install instructions always use the GitHub URL or the npm package, never the
   Gitea path (internal):
-  `pi install git:git@github.com:FloezWerk/piagent-private-ai.git` or
+  `pi install git:https://github.com/FloezWerk/piagent-private-ai.git` or
   `pi install npm:@floez-werk/piagent-private-ai`
 - Exception: refreshing the locally installed copy uses the Gitea source it
   came from: `pi update ssh://git@gitea/FloezWerk/piagent-private-ai.git`
