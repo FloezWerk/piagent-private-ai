@@ -17,9 +17,11 @@
  *
  * - Models are registered statically from the Privatemode model overview
  *   (https://docs.privatemode.ai/models/overview/).
- * - Authentication reads the `PRIVATEMODE_API_KEY` environment variable
- *   unless `proxyApiKey` is set (supports `$ENV` interpolation, literal, or
- *   `!command`, like models.json).
+ * - Authentication follows the standard pi flow: `/login private-ai` stores the
+ *   key in `auth.json` (stored credential wins over everything below).
+ *   Otherwise the configured key is used: `PRIVATEMODE_API_KEY` environment
+ *   variable, or `proxyApiKey` in settings for "proxy" mode. Without any
+ *   credential the models stay hidden from the picker, like built-in providers.
  * - Reasoning: Privatemode chat models always reason; on
  *   `/v1/chat/completions` the reasoning text is returned in the `reasoning`
  *   field, which the built-in openai-completions implementation maps to
@@ -207,8 +209,18 @@ const MODELS: PrivateAiModelSpec[] = [
 	},
 ];
 
-function hasApiKey(): boolean {
-	return Boolean(process.env[API_KEY_ENV]?.trim());
+/** Human-readable auth source for the status output. */
+function formatAuthStatus(status: { configured: boolean; source?: string; label?: string }): string {
+	if (!status.configured) {
+		return `Auth: not configured - run /login ${COMMAND_NAME} or export ${API_KEY_ENV}`;
+	}
+	const source =
+		status.source === "stored"
+			? "auth.json (via /login)"
+			: status.source === "environment"
+				? (status.label ?? API_KEY_ENV)
+				: (status.source ?? "configured");
+	return `Auth: configured (${source})`;
 }
 
 export default async function piagentPrivateAi(pi: ExtensionAPI): Promise<void> {
@@ -262,13 +274,11 @@ export default async function piagentPrivateAi(pi: ExtensionAPI): Promise<void> 
 					const current = ctx.model?.provider === PROVIDER_ID && ctx.model?.id === model.id;
 					return `${current ? "*" : "-"} ${model.id} (${model.contextWindow.toLocaleString("en-US")} ctx, ${model.input.join("/")})`;
 				});
-				const keyStatus = hasApiKey() || connection.apiKey !== `$${API_KEY_ENV}`
-					? `API key: configured (env ${API_KEY_ENV} or settings)`
-					: `API key: NOT set - export ${API_KEY_ENV}=<your key>`;
+				const authLine = formatAuthStatus(ctx.modelRegistry.getProviderAuthStatus(PROVIDER_ID));
 				const currentModel =
 					ctx.model?.provider === PROVIDER_ID ? `\nCurrent model: ${ctx.model.id}` : "";
 				ctx.ui.notify(
-					`private-ai (Privatemode)\nMode: ${connection.mode}\nBase URL: ${connection.baseUrl}\n${keyStatus}${currentModel}\nModels:\n${lines.join("\n")}\nSwitch with /${COMMAND_NAME} <model-id>. Model docs: ${DOCS_URL}`,
+					`private-ai (Privatemode)\nMode: ${connection.mode}\nBase URL: ${connection.baseUrl}\n${authLine}${currentModel}\nModels:\n${lines.join("\n")}\nSwitch with /${COMMAND_NAME} <model-id>. Model docs: ${DOCS_URL}`,
 					"info",
 				);
 				return;

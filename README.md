@@ -72,21 +72,29 @@ The following chat models appear under the `private-ai` provider
 ### Authentication
 
 Create an API key in the [Privatemode portal](https://docs.privatemode.ai/portal/api-keys/)
-and export it before starting pi:
+and store it exactly like any other provider credential:
 
-```bash
-export PRIVATEMODE_API_KEY="<your-api-key>"
+```
+/login private-ai
 ```
 
-Without the variable the models are registered but not usable (pi shows them
-as unavailable and `/private-ai` reports the missing key).
+Pi prompts `Enter API key` and saves the credential in `auth.json`; the models
+then appear in `/models` (and `/logout private-ai` removes it again).
 
-**Like every other provider, Pi lists the models in `/models` and
-`pi --list-models` only once credentials are configured** - export
-`PRIVATEMODE_API_KEY` (proxyless mode) or set `privateAi.proxyApiKey` (proxy
-mode). The extension reads `privateAi` from the user-level `settings.json` at
-load; project-level `.pi/settings.json` values apply at session start (after
-project trust).
+Alternatives, in precedence order:
+
+1. `auth.json` via `/login private-ai` (stored credential wins over everything below)
+2. `PRIVATEMODE_API_KEY` environment variable: `export PRIVATEMODE_API_KEY="<your-api-key>"`
+3. `privateAi.proxyApiKey` from settings (proxy mode only; supports `$ENV`
+   interpolation, literals, or `!command`)
+
+Without any credential the models are registered but hidden from the picker,
+like every other provider - Pi suggests `/login` in that case.
+
+Project-level `.pi/settings.json` values apply at session start (after
+project trust); the extension reads `privateAi` from the user-level
+`settings.json` directly at load so the models are known without a session
+(`pi --list-models`, startup model selection).
 
 ## Installation
 
