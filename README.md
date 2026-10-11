@@ -81,6 +81,13 @@ export PRIVATEMODE_API_KEY="<your-api-key>"
 Without the variable the models are registered but not usable (pi shows them
 as unavailable and `/private-ai` reports the missing key).
 
+**Like every other provider, Pi lists the models in `/models` and
+`pi --list-models` only once credentials are configured** - export
+`PRIVATEMODE_API_KEY` (proxyless mode) or set `privateAi.proxyApiKey` (proxy
+mode). The extension reads `privateAi` from the user-level `settings.json` at
+load; project-level `.pi/settings.json` values apply at session start (after
+project trust).
+
 ## Installation
 
 Local (development):

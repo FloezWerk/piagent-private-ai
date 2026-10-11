@@ -32,12 +32,16 @@
  */
 
 import type { ExtensionAPI, ExtensionContext, Settings } from "@earendil-works/pi-coding-agent";
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 const COMMAND_NAME = "private-ai";
 const PROVIDER_ID = "private-ai";
 const PROXYLESS_BASE_URL = "https://proxyless-api.privatemode.ai/v1";
 const PROXY_BASE_URL = "http://localhost:8080/v1";
 const API_KEY_ENV = "PRIVATEMODE_API_KEY";
+const AGENT_DIR_ENV = "PI_CODING_AGENT_DIR";
 const DOCS_URL = "https://docs.privatemode.ai/models/overview/";
 
 /**
@@ -53,20 +57,44 @@ interface PrivateAiSettings {
 	proxyApiKey?: string;
 }
 
-function readPrivateAiSettings(pi: ExtensionAPI): PrivateAiSettings {
-	const settings = pi.getSettings() as Settings & { privateAi?: PrivateAiSettings };
-	const raw = settings.privateAi;
+function sanitize(raw: unknown): PrivateAiSettings {
 	if (!raw || typeof raw !== "object") return {};
+	const value = raw as Record<string, unknown>;
 	return {
-		mode: typeof raw.mode === "string" ? raw.mode : undefined,
-		proxyBaseUrl: typeof raw.proxyBaseUrl === "string" ? raw.proxyBaseUrl : undefined,
-		proxyApiKey: typeof raw.proxyApiKey === "string" ? raw.proxyApiKey : undefined,
+		mode: typeof value.mode === "string" ? value.mode : undefined,
+		proxyBaseUrl: typeof value.proxyBaseUrl === "string" ? value.proxyBaseUrl : undefined,
+		proxyApiKey: typeof value.proxyApiKey === "string" ? value.proxyApiKey : undefined,
 	};
 }
 
+/** Merged settings from a live session (project settings included, trusted). */
+function readPrivateAiSettings(pi: ExtensionAPI): PrivateAiSettings {
+	const settings = pi.getSettings() as Settings & { privateAi?: PrivateAiSettings };
+	return sanitize(settings.privateAi);
+}
+
+/**
+ * Settings straight from the user-level settings.json. `pi.getSettings()` is
+ * not available while the extension factory runs (before the runtime is
+ * bound), so the factory reads the file itself to register the provider as
+ * early as possible - needed for `pi --list-models` and startup model
+ * selection, which do not start a session (no `session_start`). Project-level
+ * `privateAi` keys are honored later via the session_start re-registration,
+ * once project trust has been resolved.
+ */
+function readUserSettingsFromDisk(): PrivateAiSettings {
+	const agentDir = process.env[AGENT_DIR_ENV] || join(homedir(), ".pi", "agent");
+	try {
+		const parsed: unknown = JSON.parse(readFileSync(join(agentDir, "settings.json"), "utf8"));
+		const raw = (parsed as { privateAi?: unknown } | undefined)?.privateAi;
+		return sanitize(raw);
+	} catch {
+		return {};
+	}
+}
+
 /** Resolve the effective connection settings for the configured mode. */
-function resolveConnection(pi: ExtensionAPI): { baseUrl: string; apiKey: string; mode: string } {
-	const settings = readPrivateAiSettings(pi);
+function resolveConnection(settings: PrivateAiSettings): { baseUrl: string; apiKey: string; mode: string } {
 	if (settings.mode?.trim().toLowerCase() === "proxy") {
 		return {
 			mode: "proxy",
@@ -184,13 +212,9 @@ function hasApiKey(): boolean {
 }
 
 export default async function piagentPrivateAi(pi: ExtensionAPI): Promise<void> {
-	/**
-	 * Register (or re-register on /reload) once the runtime is ready:
-	 * pi.getSettings() is not available while the extension factory loads.
-	 */
-	function registerFromSettings(api: ExtensionAPI): void {
-		const connection = resolveConnection(api);
-		api.registerProvider(PROVIDER_ID, {
+	function registerFromSettings(settings: PrivateAiSettings): void {
+		const connection = resolveConnection(settings);
+		pi.registerProvider(PROVIDER_ID, {
 			name: "Private AI (Privatemode)",
 			baseUrl: connection.baseUrl,
 			apiKey: connection.apiKey,
@@ -211,16 +235,16 @@ export default async function piagentPrivateAi(pi: ExtensionAPI): Promise<void> 
 		});
 	}
 
-	// registerProvider throws while the runtime is not yet initialized (during
-	// initial extension loading); session_start then performs the registration.
-	try {
-		registerFromSettings(pi);
-	} catch {
-		// Handled by the session_start handler.
-	}
+	// Early registration from the user settings.json, so the models are known
+	// before a session starts (pi --list-models, startup model selection).
+	// registerProvider calls during extension load are queued by pi.
+	registerFromSettings(readUserSettingsFromDisk());
 
+	// Re-register with the fully merged settings once the session starts
+	// (pi.getSettings() is not callable during extension loading; project
+	// settings only load after trust is resolved).
 	pi.on("session_start", () => {
-		registerFromSettings(pi);
+		registerFromSettings(readPrivateAiSettings(pi));
 	});
 
 	pi.registerCommand(COMMAND_NAME, {
@@ -232,7 +256,7 @@ export default async function piagentPrivateAi(pi: ExtensionAPI): Promise<void> 
 			if (!target) {
 				if (!ctx.hasUI) return;
 
-				const connection = resolveConnection(pi);
+				const connection = resolveConnection(readPrivateAiSettings(pi));
 				const models = ctx.modelRegistry.getModelsOfType("chat", PROVIDER_ID);
 				const lines = models.map((model) => {
 					const current = ctx.model?.provider === PROVIDER_ID && ctx.model?.id === model.id;
