@@ -104,22 +104,17 @@ Local (development):
 pi -e ./extensions/piagent-private-ai.ts
 ```
 
-As a pi package (GitHub or npm):
+As a pi package (GitHub):
 
 ```bash
 pi install git:https://github.com/FloezWerk/piagent-private-ai.git
-# or
-pi install npm:@floez-werk/piagent-private-ai
 ```
-
-The npm package is listed in the [pi package catalog](https://pi.dev/packages)
-automatically (keyword `pi-package`).
 
 ## Commands
 
 | Command | Effect |
 | --- | --- |
-| `/private-ai` | Show provider status: connection mode, base URL, whether `PRIVATEMODE_API_KEY` is set, the current model (if it is a private-ai model) and the available models. |
+| `/private-ai` | Show provider status: connection mode, base URL, the resolved auth source, the current model (if it is a private-ai model) and the available models. |
 | `/private-ai <model-id>` | Switch the current session to a `private-ai` model, e.g. `/private-ai glm-latest`. |
 
 After changes in a running session: `/reload`.
