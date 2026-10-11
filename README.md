@@ -20,15 +20,38 @@ Pi extension: use private-ai (Privatemode) models as a provider
 
 ## Behavior
 
-Registers `private-ai` as a Pi model provider backed by the
-[Privatemode proxyless API](https://docs.privatemode.ai/api/proxyless-api/) - an
-OpenAI-compatible chat endpoint operated inside confidential computing
-environments by [Edgeless Systems](https://www.privatemode.ai/). No Pi service
-is involved; requests go to `https://proxyless-api.privatemode.ai/v1`.
+Registers `private-ai` as a Pi model provider backed by
+[Privatemode](https://docs.privatemode.ai/) - an OpenAI-compatible chat
+endpoint operated inside confidential computing environments by
+[Edgeless Systems](https://www.privatemode.ai/). No Pi service is involved.
 
-**Before:** Privatemode models are not available in the model picker.
+### Connection modes
 
-**After:** the following chat models appear under the `private-ai` provider
+The connection is configured via the `privateAi` settings key (user settings
+`~/.pi/agent/settings.json` or project settings `.pi/settings.json`):
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `privateAi.mode` | `"proxyless"` | `"proxyless"` uses the hosted [proxyless API](https://docs.privatemode.ai/api/proxyless-api/) (memory encryption, no client-side attestation). `"proxy"` calls a locally running [Privatemode proxy](https://docs.privatemode.ai/api/proxy-configuration/), which verifies the backend attestation and encrypts prompts client-side. |
+| `privateAi.proxyBaseUrl` | `http://localhost:8080/v1` | Base URL of the proxy in `"proxy"` mode (e.g. a remote proxy at `http://raspberrypi:3003/v1`). |
+| `privateAi.proxyApiKey` | `$PRIVATEMODE_API_KEY` | API key sent to the proxy in `"proxy"` mode. Supports `$ENV` interpolation, a literal value, or `!command` (like models.json). |
+
+Example:
+
+```json
+{
+  "privateAi": {
+    "mode": "proxy",
+    "proxyBaseUrl": "http://raspberrypi:3003/v1"
+  }
+}
+```
+
+Settings changes require a pi restart or `/reload`.
+
+### Models
+
+The following chat models appear under the `private-ai` provider
 (see the [Privatemode model overview](https://docs.privatemode.ai/models/overview/)):
 
 | Model ID | Alias | Context | Input | Reasoning effort |
@@ -81,7 +104,7 @@ automatically (keyword `pi-package`).
 
 | Command | Effect |
 | --- | --- |
-| `/private-ai` | Show provider status: whether `PRIVATEMODE_API_KEY` is set, the current model (if it is a private-ai model) and the available models. |
+| `/private-ai` | Show provider status: connection mode, base URL, whether `PRIVATEMODE_API_KEY` is set, the current model (if it is a private-ai model) and the available models. |
 | `/private-ai <model-id>` | Switch the current session to a `private-ai` model, e.g. `/private-ai glm-latest`. |
 
 After changes in a running session: `/reload`.

@@ -9,9 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Register `private-ai` as a Pi provider backed by the Privatemode proxyless API with the chat models `glm-5.3` (alias `glm-latest`), `glm-5.3-flash` (alias `glm-flash-latest`) and `gpt-oss-120b`.
-- Forward the pi thinking level as `reasoning_effort` and map the response `reasoning` field to thinking.
-- `/private-ai` shows provider status; `/private-ai <model-id>` switches the session model.
+- `privateAi` settings key to choose the connection mode: `proxyless` (default, hosted proxyless API) or `proxy` (local/remote Privatemode proxy with configurable `proxyBaseUrl` and `proxyApiKey`).
+- `/private-ai` status now shows the connection mode and effective base URL.
 
 ## [0.1.0](https://www.npmjs.com/package/@floez-werk/piagent-private-ai/v/0.1.0) - 2026-10-11
 
