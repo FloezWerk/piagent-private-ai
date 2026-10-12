@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/FloezWerk/piagent-private-ai/releases/tag/v0.1.1) - 2026-10-12
+
 ### Added
 
 - `privateAi` settings key to choose the connection mode: `proxyless` (default, hosted proxyless API) or `proxy` (local/remote Privatemode proxy with configurable `proxyBaseUrl` and `proxyApiKey`).
@@ -20,8 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-<!-- [Unreleased] compares against the last tagged version; switch this link to
-     compare/vX.Y.Z...HEAD once the first version is tagged. Every version
+<!-- [Unreleased] compares against the last tagged version. Every version
      heading links to its GitHub release page (created by release.yml); 0.1.0
-     has no tag yet (the first publish is manual), so it links to npm. -->
-[Unreleased]: https://github.com/FloezWerk/piagent-private-ai/commits/main
+     has no tag (the first publish was manual), so it links to npm. -->
+[Unreleased]: https://github.com/FloezWerk/piagent-private-ai/compare/v0.1.1...HEAD
