@@ -1,6 +1,6 @@
 {
   "name": "@floez-werk/piagent-private-ai",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Pi extension: use private-ai (privatemode.ai) models as a provider",
   "keywords": [
     "pi-package",
